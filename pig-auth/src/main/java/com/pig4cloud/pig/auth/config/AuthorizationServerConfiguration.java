@@ -61,7 +61,7 @@ import java.util.Arrays;
  * <p>
  * 认证服务器配置
  */
-// 1. 搭建授权服务器
+//o2 1. 搭建授权服务器
 @Configuration
 @RequiredArgsConstructor
 public class AuthorizationServerConfiguration {
@@ -82,50 +82,53 @@ public class AuthorizationServerConfiguration {
 	@Order(Ordered.HIGHEST_PRECEDENCE)
 	public SecurityFilterChain authorizationServer(HttpSecurity http) throws Exception {
 		// 配置授权服务器的安全策略，只有/oauth2/**的请求才会走如下的配置
-		// 1.1.配置授权拦截请求端点，所有/oauth2/下的请求都走这里
+		//o2 1.1.配置授权拦截请求端点，所有/oauth2/下的请求都走这里
 		http.securityMatcher("/oauth2/**");
-		//1.2. 创建授权服务器配置类
+		//o2 1.2. 创建授权服务器配置类
 		OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
 		// 增加验证码过滤器
-		// 1.3. 创建过滤器 先校验一些基本的信息，不通过直接打回
+		//o2 1.3. 创建过滤器 先校验一些基本的信息，不通过直接打回
 		http.addFilterBefore(validateCodeFilter, UsernamePasswordAuthenticationFilter.class);
 		// 增加密码解密过滤器
-		// 1.3. 创建过滤器 先校验一些基本的信息，不通过直接打回
+		//o2 1.3. 创建过滤器 先校验一些基本的信息，不通过直接打回
 		http.addFilterBefore(passwordDecoderFilter, UsernamePasswordAuthenticationFilter.class);
 
-		// 1.4. 配置授权端点、令牌端点、客户端详情、授权模式
-		// 1.5. 配置token认证端点
+		//o2 1.4. 配置授权端点、令牌端点、客户端详情、授权模式
+		//o2 1.5. 配置token认证端点
 		http.with(authorizationServerConfigurer.tokenEndpoint((tokenEndpoint) -> {// 个性化认证授权端点
-			// 1.6. 配置converter转换，将前端传来的请求封装成token
+			//o2 1.6. 配置converter转换，将前端传来的请求封装成token
 			tokenEndpoint.accessTokenRequestConverter(accessTokenRequestConverter()) // 注入自定义的授权认证Converter
-					// 1.7. 登录成功做什么事
+					//o2 1.7. 登录成功做什么事
 				.accessTokenResponseHandler(new PigAuthenticationSuccessEventHandler()) // 登录成功处理器
-					// 1.8. 登录失败做什么事
+					//o2 1.8. 登录失败做什么事
 				.errorResponseHandler(new PigAuthenticationFailureEventHandler());// 登录失败处理器
-			//? 1.9. 客户端端点，具体做什么事
+			//o2 ? 1.9. 客户端端点，具体做什么事
 		}).clientAuthentication(oAuth2ClientAuthenticationConfigurer -> // 个性化客户端认证
 		oAuth2ClientAuthenticationConfigurer.errorResponseHandler(new PigAuthenticationFailureEventHandler()))// 处理客户端认证异常
-				//? 授权页面，这个页面一般是什么
+				//o2 ? 授权页面，这个页面一般是什么
 			.authorizationEndpoint(authorizationEndpoint -> authorizationEndpoint// 授权码端点个性化confirm页面
 				.consentPage(SecurityConstants.CUSTOM_CONSENT_PAGE_URI)), Customizer.withDefaults())
-				//? 1.10. 所有的请求都要认证
+				//o2 ? 1.10. 所有的请求都要认证
 			.authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated());
 
-		// 1.11. 设置token怎么存，怎么拿，哪里会拿，拿的是什么，jwt吗
+		//o2 1.11. 设置token怎么存，怎么拿，哪里会拿，拿的是什么，jwt吗
+
 		// 设置 Token 存储的策略
 		http.with(authorizationServerConfigurer.authorizationService(authorizationService)// redis存储token的实现
-				//? 1.12. 配置了授权服务器的配置，只配置了issuer标识，别的不需要了吗
+				//o2 ? 1.12. 配置了授权服务器的配置，只配置了issuer标识，别的不需要了吗
 			.authorizationServerSettings(
 					AuthorizationServerSettings.builder().issuer(SecurityConstants.PROJECT_LICENSE).build()),
 				Customizer.withDefaults());
 
-		// 1.13. 这里配置授权码模式页面，这个页面是什么样，嵌入微信登录，就是微信登录二维码吗
+		//o2 1.1.3. 这里配置授权码模式页面，这个页面是什么样，嵌入微信登录，就是微信登录二维码吗
+
 		// 设置授权码模式登录页面
 		http.with(new FormIdentityLoginConfigurer(), Customizer.withDefaults());
 		DefaultSecurityFilterChain securityFilterChain = http.build();
 
-		//? 这里为什么是在生成了securityFilterChain后执行。
+		//o2 ? 这里为什么是在生成了securityFilterChain后执行。
+
 		// 注入自定义授权模式实现
 		addCustomOAuth2GrantAuthenticationProvider(http);
 
@@ -149,7 +152,7 @@ public class AuthorizationServerConfiguration {
 	 * request -> xToken 注入请求转换器
 	 * @return DelegatingAuthenticationConverter
 	 */
-	//? 1.14. 注入converter， 有了password和sms，为什么还需要其他的converter
+	//o2 ? 1.14. 注入converter， 有了password和sms，为什么还需要其他的converter
 	@Bean
 	public AuthenticationConverter accessTokenRequestConverter() {
 		return new DelegatingAuthenticationConverter(Arrays.asList(
@@ -166,7 +169,7 @@ public class AuthorizationServerConfiguration {
 	 * 1. 密码模式 </br>
 	 * 2. 短信登录 </br>
 	 */
-	//? 1.15 在http里面加provider
+	//o2 ? 1.15 在http里面加provider
 	@SuppressWarnings("unchecked")
 	private void addCustomOAuth2GrantAuthenticationProvider(HttpSecurity http) {
 		//? getSharedObject获取了个寂寞
@@ -179,7 +182,8 @@ public class AuthorizationServerConfiguration {
 		OAuth2ResourceOwnerSmsAuthenticationProvider resourceOwnerSmsAuthenticationProvider = new OAuth2ResourceOwnerSmsAuthenticationProvider(
 				authenticationManager, authorizationService, oAuth2TokenGenerator());
 
-		//? 这个系统的自定义provider最终走的都是DaoAuthenticationProvider，一定要这么写吗
+		//o2? 这个系统的自定义provider最终走的都是DaoAuthenticationProvider，一定要这么写吗
+
 		// 处理 UsernamePasswordAuthenticationToken
 		http.authenticationProvider(new PigDaoAuthenticationProvider());
 		// 处理 OAuth2ResourceOwnerPasswordAuthenticationToken

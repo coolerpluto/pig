@@ -30,6 +30,7 @@ import java.util.Optional;
  * @author lengleng
  * @date 2022/5/29
  */
+// NOTE 这里为什么会注册为bean
 @RequiredArgsConstructor
 public class PigRemoteRegisteredClientRepository implements RegisteredClientRepository {
 
@@ -80,11 +81,13 @@ public class PigRemoteRegisteredClientRepository implements RegisteredClientRepo
 	 * @param clientId
 	 * @return
 	 */
+	//? Cacheable怎么用
 	@Override
 	@SneakyThrows
 	@Cacheable(value = CacheConstants.CLIENT_DETAILS_KEY, key = "#clientId", unless = "#result == null")
 	public RegisteredClient findByClientId(String clientId) {
 
+		//NOTE 这个retops解决了什么
 		SysOauthClientDetails clientDetails = RetOps.of(clientDetailsService.getClientDetailsById(clientId))
 			.getData()
 			.orElseThrow(() -> new OAuth2AuthorizationCodeRequestAuthenticationException(

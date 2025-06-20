@@ -56,6 +56,8 @@ public class OAuth2ResourceOwnerPasswordAuthenticationProvider
 	@Override
 	public void checkClient(RegisteredClient registeredClient) {
 		assert registeredClient != null;
+		//o2 3.7.1 这里的registeredClient应该是数据库里的，那么拿取它的getAuthorizationGrantTypes字段，这里面定义了这个客户端支持的
+		// 授权类型，如果不支持密码，那么就抛异常
 		if (!registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.PASSWORD)) {
 			throw new OAuth2AuthenticationException(OAuth2ErrorCodes.UNAUTHORIZED_CLIENT);
 		}

@@ -35,6 +35,11 @@ import java.util.function.Supplier;
  *
  * 处理自定义授权
  */
+//o2 AuthenticationManager是一个接口，定义了生成token的接口，ProviderManager是AuthenticationManager的实现类，其具体来做生成token的事
+// 在ProviderManager里面有个List<AuthenticationProvider> 的字段，在ProviderManager的authenticate方法里，里面会对ProviderManager的List<AuthenticationProvider>
+// 进行循环遍历AuthenticationProvider，也就是循环遍历自定义的AuthenticationProvider的supports方法，哪个返回true，就用哪个自定义的AuthenticationProvider的
+// authenticate方法。从而实现自定义的provider生成token
+//o2 3.provider处理真正的token产出
 public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OAuth2ResourceOwnerBaseAuthenticationToken>
 		implements AuthenticationProvider {
 
@@ -42,14 +47,19 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 
 	private static final String ERROR_URI = "https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2.1";
 
+	//o2 3.1 自定义个处理token存储和获取的service，可用于存到redis里
 	private final OAuth2AuthorizationService authorizationService;
 
+	//o2 3.2 自定义个生成token的generator
 	private final OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
 
+	//o2 AuthenticationManager 这个manager用户提供provider，这个类里面用于为userpasswordtoken校验密码和数据库
 	private final AuthenticationManager authenticationManager;
 
+	//o2 ? 这个干什么
 	private final MessageSourceAccessor messages;
 
+	//o2 ? 为什么弃用
 	@Deprecated
 	private Supplier<String> refreshTokenGenerator;
 
@@ -106,17 +116,25 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 	 * <code>Authentication</code> class will be tried.
 	 * @throws AuthenticationException if authentication fails.
 	 */
+	//o2 3.3 使用converter生成的token来生成新的token
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
+		//o2 3.4 泛型化为具体的自定义token
 		T resouceOwnerBaseAuthentication = (T) authentication;
 
+		//o2 3.5 这里获取converter传过来的token里的客户端认证情况，从而决定继不继续往下走
+		// 如果这个调用没有异常，那么就说明客户端认证通过且往下走
 		OAuth2ClientAuthenticationToken clientPrincipal = getAuthenticatedClientElseThrowInvalidClient(
 				resouceOwnerBaseAuthentication);
 
+		//o2 3.6 获取客户端client对象
 		RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
+		//o2 3.7 这里的registeredClient的属性数据应该是数据库里存的，那么拿取它的getAuthorizationGrantTypes字段，这里面定义了这个客户端支持的
+		// 授权类型，自定义的provider里面判断不支持，那么就抛异常
 		checkClient(registeredClient);
 
+		//o2?
 		Set<String> authorizedScopes;
 		// Default to configured scopes
 		if (!CollectionUtils.isEmpty(resouceOwnerBaseAuthentication.getScopes())) {
@@ -273,6 +291,7 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 
 		OAuth2ClientAuthenticationToken clientPrincipal = null;
 
+		//
 		if (OAuth2ClientAuthenticationToken.class.isAssignableFrom(authentication.getPrincipal().getClass())) {
 			clientPrincipal = (OAuth2ClientAuthenticationToken) authentication.getPrincipal();
 		}

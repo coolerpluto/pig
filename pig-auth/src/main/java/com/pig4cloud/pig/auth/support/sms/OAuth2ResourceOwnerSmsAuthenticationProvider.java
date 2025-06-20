@@ -51,6 +51,8 @@ public class OAuth2ResourceOwnerSmsAuthenticationProvider
 	@Override
 	public void checkClient(RegisteredClient registeredClient) {
 		assert registeredClient != null;
+		//o2 3.7.2 这里的registeredClient应该是数据库里的，那么拿取它的getAuthorizationGrantTypes字段，这里面定义了这个客户端支持的
+		// 授权类型，如果不支持手机号，那么就抛异常
 		if (!registeredClient.getAuthorizationGrantTypes()
 			.contains(new AuthorizationGrantType(SecurityConstants.MOBILE))) {
 			throw new OAuth2AuthenticationException(OAuth2ErrorCodes.UNAUTHORIZED_CLIENT);
