@@ -134,9 +134,10 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 		// 授权类型，自定义的provider里面判断不支持，那么就抛异常
 		checkClient(registeredClient);
 
-		//o2?
+		//o2? 3.8scope具体做什么用的
 		Set<String> authorizedScopes;
 		// Default to configured scopes
+		//o2? 3.9这个scopes是在哪获取的
 		if (!CollectionUtils.isEmpty(resouceOwnerBaseAuthentication.getScopes())) {
 			for (String requestedScope : resouceOwnerBaseAuthentication.getScopes()) {
 				if (!registeredClient.getScopes().contains(requestedScope)) {
@@ -149,13 +150,21 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 			authorizedScopes = new LinkedHashSet<>();
 		}
 
+		//o2 4 获取自定义token里面的额外字段，包括用户密码，手机号，来进行真正的认证环节
 		Map<String, Object> reqParameters = resouceOwnerBaseAuthentication.getAdditionalParameters();
 		try {
 
+			//o2 4.1 将认证参数封装为UsernamePasswordAuthenticationToken，因为后面调用PigDaoAuthenticationProvider
 			UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = buildToken(reqParameters);
 
 			LOGGER.debug("got usernamePasswordAuthenticationToken=" + usernamePasswordAuthenticationToken);
 
+			//o2 4.1.1 PigDaoAuthenticationProvider实现了AbstractUserDetailsAuthenticationProvider，这个provider是专门用来
+			// 验证UsernamePasswordAuthenticationToken的，AbstractUserDetailsAuthenticationProvider里面的supports代码表明了这一点
+			// AbstractUserDetailsAuthenticationProvider里的supports源码
+			//     public boolean supports(Class<?> authentication) {
+			//        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+			//    }
 			Authentication usernamePasswordAuthentication = authenticationManager
 				.authenticate(usernamePasswordAuthenticationToken);
 
